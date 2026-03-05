@@ -7,7 +7,7 @@ listeners:
     type: http
     x_forwarded: true
     resources:
-      - names: [client, federation]
+      - names: [client, federation, media]
         compress: false
 
 database:
@@ -25,6 +25,9 @@ enable_registration_without_verification: true
 
 # Admin operations
 registration_shared_secret: "CHANGE_ME_REGISTRATION_SHARED_SECRET"
+
+# Allow unauthenticated media downloads (legacy endpoint)
+enable_authenticated_media: false
 
 # Application services
 app_service_config_files:

@@ -3,16 +3,25 @@
  * {
  *   nsidPrefix: string,           // e.g. 'app.bsky'
  *   displayName: string,          // e.g. 'Bluesky'
- *   renderers: {                  // NSID → React component
+ *   renderers: {                  // collection NSID → React component
  *     'app.bsky.feed.post': PostRenderer,
  *   },
- *   composers: {                  // NSID → React component
+ *   composers: {                  // collection NSID → React component
  *     'app.bsky.feed.post': PostComposer,
  *   },
- *   defaultComposerType: string,  // default NSID for composing
+ *   defaultComposerType: string,  // default collection NSID for composing
  *   canHandleEvent(matrixEvent): boolean,
- *   recordToMatrixContent(record): object,
- *   matrixContentToRecord(content): object,
+ * }
+ *
+ * Matrix event format (com.atproto.repo.createRecord):
+ * {
+ *   type: 'com.atproto.repo.createRecord',
+ *   content: {
+ *     repo: 'did:plc:...',
+ *     collection: 'app.bsky.feed.post',
+ *     rkey: '<tid>',
+ *     record: { $type: 'app.bsky.feed.post', ... }
+ *   }
  * }
  */
 class LexiconRegistry {
@@ -28,7 +37,7 @@ class LexiconRegistry {
 
   /**
    * Find the best plugin for a Matrix event.
-   * Checks io.atrix.lexicon.event $type against registered prefixes (longest match first).
+   * For com.atproto.repo.createRecord events, matches content.collection against registered prefixes.
    */
   findForEvent(matrixEvent) {
     const type = typeof matrixEvent.getType === 'function'
@@ -39,9 +48,13 @@ class LexiconRegistry {
       ? matrixEvent.getContent()
       : matrixEvent.content;
 
-    if (type !== 'io.atrix.lexicon.event') return null;
+    let nsid;
+    if (type === 'com.atproto.repo.createRecord') {
+      nsid = content?.collection;
+    } else {
+      return null;
+    }
 
-    const nsid = content?.['$type'];
     if (!nsid) return null;
 
     // Find longest matching prefix

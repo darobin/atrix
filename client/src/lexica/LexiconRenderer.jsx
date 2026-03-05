@@ -6,7 +6,9 @@ export default function LexiconRenderer({ event, roomConfig, reactions, matrixCl
   const plugin = registry.findForEvent(event);
 
   if (plugin) {
-    const nsid = (typeof event.getContent === 'function' ? event.getContent() : event.content)?.['$type'];
+    const content = typeof event.getContent === 'function' ? event.getContent() : event.content;
+    // The collection (e.g. 'app.bsky.feed.post') is the key into plugin.renderers
+    const nsid = content?.collection;
     const Renderer = nsid && plugin.renderers?.[nsid];
     if (Renderer) {
       return (
@@ -20,6 +22,6 @@ export default function LexiconRenderer({ event, roomConfig, reactions, matrixCl
     }
   }
 
-  // Fallback for m.room.message and unknown lexicon events
+  // Fallback for m.room.message and unknown events
   return <PlainMessageRenderer event={event} />;
 }

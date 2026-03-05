@@ -7,22 +7,19 @@ export default function MessageTimeline({ room, roomConfig, matrixClient }) {
 
   function loadEvents() {
     if (!room) return;
-    const tl = room.getLiveTimeline();
-    const evts = tl.getEvents().filter(e =>
+    const evts = room.getLiveTimeline().getEvents().filter(e =>
       e.getType() === 'm.room.message' ||
-      e.getType() === 'io.atrix.lexicon.event' ||
-      e.getType() === 'm.reaction'
+      e.getType() === 'com.atproto.repo.createRecord' ||
+      e.getType() === 'com.atproto.repo.deleteRecord'
     );
     setEvents([...evts]);
   }
 
   useEffect(() => {
     loadEvents();
-
     const onTimeline = (event, r) => {
       if (r?.roomId === room?.roomId) loadEvents();
     };
-
     matrixClient?.on('Room.timeline', onTimeline);
     return () => matrixClient?.off('Room.timeline', onTimeline);
   }, [room, matrixClient]);
@@ -31,19 +28,60 @@ export default function MessageTimeline({ room, roomConfig, matrixClient }) {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [events]);
 
-  // Group reactions by their related event
-  const reactions = {};
+  // --- ATProto-semantic grouping ---
+
+  // 1. Build AT URI → Matrix event ID map for all post createRecords
+  const atUriToEventId = {};
+  for (const event of events) {
+    if (event.getType() !== 'com.atproto.repo.createRecord') continue;
+    const c = event.getContent();
+    if (c.repo && c.collection && c.rkey) {
+      atUriToEventId[`at://${c.repo}/${c.collection}/${c.rkey}`] = event.getId();
+    }
+  }
+
+  // 2. Build set of deleted records: "repo/collection/rkey"
+  const deleted = new Set();
+  for (const event of events) {
+    if (event.getType() !== 'com.atproto.repo.deleteRecord') continue;
+    const c = event.getContent();
+    if (c.repo && c.collection && c.rkey) {
+      deleted.add(`${c.repo}/${c.collection}/${c.rkey}`);
+    }
+  }
+
+  // 3. Separate reactions (likes/reposts) from main events
+  const reactions = {}; // eventId → [reaction events]
   const mainEvents = [];
 
   for (const event of events) {
-    if (event.getType() === 'm.reaction') {
-      const rel = event.getContent()?.['m.relates_to'];
-      if (rel?.rel_type === 'm.annotation' && rel.event_id) {
-        if (!reactions[rel.event_id]) reactions[rel.event_id] = [];
-        reactions[rel.event_id].push(event);
+    const type = event.getType();
+
+    // deleteRecord events are never shown directly — they suppress createRecords
+    if (type === 'com.atproto.repo.deleteRecord') continue;
+
+    if (type === 'com.atproto.repo.createRecord') {
+      const c = event.getContent();
+      const key = c.repo && c.collection && c.rkey
+        ? `${c.repo}/${c.collection}/${c.rkey}`
+        : null;
+
+      // Skip records that have been deleted
+      if (key && deleted.has(key)) continue;
+
+      // Likes and reposts are reactions — group them with their parent post
+      if (c.collection === 'app.bsky.feed.like' || c.collection === 'app.bsky.feed.repost') {
+        const subjectUri = c.record?.subject?.uri;
+        const parentEventId = subjectUri ? atUriToEventId[subjectUri] : null;
+        if (parentEventId) {
+          if (!reactions[parentEventId]) reactions[parentEventId] = [];
+          reactions[parentEventId].push(event);
+        }
+        // If no parent found in timeline (e.g. history not loaded), skip silently
         continue;
       }
     }
+
     mainEvents.push(event);
   }
 

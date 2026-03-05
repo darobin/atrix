@@ -2,6 +2,8 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 
 const AuthContext = createContext(null);
 
+const BSKY_API = 'https://public.api.bsky.app/xrpc';
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -9,7 +11,16 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     fetch('/auth/me', { credentials: 'include' })
       .then(r => r.ok ? r.json() : null)
-      .then(data => {
+      .then(async data => {
+        if (data?.did) {
+          try {
+            const profile = await fetch(`${BSKY_API}/app.bsky.actor.getProfile?actor=${encodeURIComponent(data.did)}`)
+              .then(r => r.ok ? r.json() : null);
+            if (profile) {
+              data = { ...data, displayName: profile.displayName, avatar: profile.avatar };
+            }
+          } catch { /* non-fatal */ }
+        }
         setUser(data || null);
         setLoading(false);
       })

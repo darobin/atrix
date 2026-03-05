@@ -1,15 +1,21 @@
 import React, { useState } from 'react';
 import { useAuth } from './AuthProvider.jsx';
 
+function getCookie(name) {
+  const match = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
+  return match ? decodeURIComponent(match[1]) : '';
+}
+
 export default function LoginPage() {
   const { login } = useAuth();
-  const [handle, setHandle] = useState('');
+  const [handle, setHandle] = useState(() => getCookie('bsky-handle'));
   const [loading, setLoading] = useState(false);
   const error = new URLSearchParams(window.location.search).get('error');
 
   function handleSubmit(e) {
     e.preventDefault();
     if (!handle.trim()) return;
+    document.cookie = `bsky-handle=${encodeURIComponent(handle.trim())}; max-age=${60 * 60 * 24 * 365}; path=/; SameSite=Lax`;
     setLoading(true);
     login(handle.trim());
   }

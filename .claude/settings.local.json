@@ -11,7 +11,9 @@
       "Bash(docker ps:*)",
       "Bash(lsof:*)",
       "Bash(docker exec:*)",
-      "Bash(pkill:*)"
+      "Bash(pkill:*)",
+      "WebFetch(domain:atproto.com)",
+      "WebFetch(domain:docs.bsky.app)"
     ]
   }
 }

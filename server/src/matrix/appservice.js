@@ -1,6 +1,5 @@
 import { config } from '../config.js';
 import { query } from '../db.js';
-import { validateLexiconEvent } from '../lexicon/validator.js';
 
 /**
  * Middleware to verify Synapse hs_token on AS requests.
@@ -29,22 +28,25 @@ export async function processTransaction(txnId, events) {
 async function processEvent(event) {
   const { type, room_id, content } = event;
 
-  if (type !== 'io.atrix.lexicon.event') return;
+  // Only validate ATProto repository operations
+  if (type !== 'com.atproto.repo.createRecord' && type !== 'com.atproto.repo.deleteRecord') return;
 
-  // Check room has lexicon config
+  // Check room has a lexicon config
   const rows = await query('SELECT lexicon_prefixes FROM room_configs WHERE room_id = ?', [room_id]);
   if (!rows.length) return;
 
-  const prefixes = rows[0].lexicon_prefixes || [];
+  const prefixes = JSON.parse(rows[0].lexicon_prefixes || '[]');
   if (!prefixes.length) return;
 
-  const nsid = content?.['$type'];
-  if (!nsid) return;
+  const collection = content?.collection;
+  if (!collection) return;
 
-  // Validate the event NSID matches an allowed prefix
-  const allowed = prefixes.some(prefix => nsid.startsWith(prefix));
+  // Validate the collection matches an allowed prefix
+  const allowed = prefixes.some(prefix =>
+    collection === prefix || collection.startsWith(prefix + '.')
+  );
   if (!allowed) {
-    console.warn(`Event with NSID ${nsid} rejected for room ${room_id} (allowed: ${prefixes})`);
+    console.warn(`Event with collection ${collection} rejected for room ${room_id} (allowed: ${prefixes})`);
     // In production you'd redact the event here via admin API
   }
 }

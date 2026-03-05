@@ -1,12 +1,48 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useMatrix } from '../matrix/MatrixProvider.jsx';
 import MessageTimeline from './MessageTimeline.jsx';
 import LexiconComposer from '../lexica/LexiconComposer.jsx';
+
+function JsonTimeline({ room, matrixClient }) {
+  const [events, setEvents] = useState([]);
+  const bottomRef = useRef(null);
+
+  function loadEvents() {
+    if (!room) return;
+    setEvents([...room.getLiveTimeline().getEvents()]);
+  }
+
+  useEffect(() => {
+    loadEvents();
+    const onTimeline = (event, r) => { if (r?.roomId === room?.roomId) loadEvents(); };
+    matrixClient?.on('Room.timeline', onTimeline);
+    return () => matrixClient?.off('Room.timeline', onTimeline);
+  }, [room, matrixClient]);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [events]);
+
+  return (
+    <div className="h-full overflow-y-auto p-4 space-y-2 bg-gray-950 font-mono text-xs">
+      {events.map(event => {
+        const raw = event.event ?? { type: event.getType(), content: event.getContent(), sender: event.getSender(), origin_server_ts: event.getTs(), event_id: event.getId() };
+        return (
+          <div key={event.getId()} className="bg-gray-900 rounded p-3 text-gray-200 whitespace-pre-wrap break-all">
+            {JSON.stringify(raw, null, 2)}
+          </div>
+        );
+      })}
+      <div ref={bottomRef} />
+    </div>
+  );
+}
 
 export default function RoomView({ roomId }) {
   const { matrixClient } = useMatrix();
   const [roomConfig, setRoomConfig] = useState(null);
   const [room, setRoom] = useState(null);
+  const [showJson, setShowJson] = useState(false);
 
   useEffect(() => {
     if (!matrixClient) return;
@@ -53,11 +89,20 @@ export default function RoomView({ roomId }) {
             {roomConfig.lexiconPrefixes.join(', ')}
           </span>
         )}
+        <button
+          onClick={() => setShowJson(v => !v)}
+          className={`ml-auto text-xs rounded px-2 py-0.5 border transition-colors ${showJson ? 'bg-gray-900 text-gray-100 border-gray-700' : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400'}`}
+        >
+          {showJson ? 'Rendered' : 'JSON'}
+        </button>
       </div>
 
       {/* Timeline */}
       <div className="flex-1 overflow-hidden">
-        <MessageTimeline room={room} roomConfig={roomConfig} matrixClient={matrixClient} />
+        {showJson
+          ? <JsonTimeline room={room} matrixClient={matrixClient} />
+          : <MessageTimeline room={room} roomConfig={roomConfig} matrixClient={matrixClient} />
+        }
       </div>
 
       {/* Composer */}

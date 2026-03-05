@@ -7,6 +7,7 @@ import { initOAuthClient } from './auth/atproto.js';
 import authRouter from './routes/auth.js';
 import roomsRouter from './routes/rooms.js';
 import appserviceRouter from './routes/appservice.js';
+import miscRouter from './routes/misc.js';
 import { bootstrapAdminToken } from './matrix/admin.js';
 
 const app = express();
@@ -21,6 +22,7 @@ app.use(sessionMiddleware);
 app.use('/', authRouter);
 app.use('/', roomsRouter);
 app.use('/', appserviceRouter);
+app.use('/', miscRouter);
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
 // After all routes: intercept any remaining ngrok requests and bounce them

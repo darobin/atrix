@@ -6,8 +6,37 @@ import RoomList from './rooms/RoomList.jsx';
 import RoomView from './rooms/RoomView.jsx';
 import RoomCreator from './rooms/RoomCreator.jsx';
 
+function UserProfile({ user, onLogout }) {
+  return (
+    <div className="p-4 border-b border-gray-700">
+      <div className="flex items-center gap-3">
+        {user.avatar ? (
+          <img src={user.avatar} alt="" className="w-9 h-9 rounded-full object-cover flex-shrink-0" />
+        ) : (
+          <div className="w-9 h-9 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+            {(user.handle || '?')[0].toUpperCase()}
+          </div>
+        )}
+        <div className="min-w-0 flex-1">
+          {user.displayName && (
+            <div className="font-semibold text-white text-sm truncate leading-tight">{user.displayName}</div>
+          )}
+          <div className="text-gray-400 text-xs truncate">@{user.handle}</div>
+        </div>
+        <button
+          onClick={onLogout}
+          title="Sign out"
+          className="text-gray-500 hover:text-gray-300 text-xs flex-shrink-0"
+        >
+          ⏏
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function AppContent() {
-  const { user, loading } = useAuth();
+  const { user, loading, logout } = useAuth();
   const [selectedRoomId, setSelectedRoomId] = useState(null);
   const [showCreator, setShowCreator] = useState(false);
 
@@ -28,10 +57,7 @@ function AppContent() {
       <div className="flex h-screen bg-gray-100">
         {/* Sidebar */}
         <div className="w-72 bg-gray-900 text-white flex flex-col">
-          <div className="p-4 border-b border-gray-700">
-            <h1 className="text-xl font-bold">Atrix</h1>
-            <p className="text-sm text-gray-400 mt-1">{user.handle}</p>
-          </div>
+          <UserProfile user={user} onLogout={logout} />
           <div className="flex-1 overflow-y-auto">
             <RoomList
               selectedRoomId={selectedRoomId}
