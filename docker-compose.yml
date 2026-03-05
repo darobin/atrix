@@ -1,0 +1,46 @@
+services:
+  synapse:
+    image: matrixdotorg/synapse:latest
+    container_name: atrix-synapse
+    user: root
+    ports:
+      - "8008:8008"
+    volumes:
+      - ./synapse-data:/data
+      - ./synapse:/config:ro
+    environment:
+      - SYNAPSE_CONFIG_PATH=/config/homeserver.yaml
+    depends_on: []
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-fSs", "http://localhost:8008/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+  atrix:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: atrix-server
+    ports:
+      - "3000:3000"
+    volumes:
+      - atrix-data:/data
+    environment:
+      - PORT=3000
+      - PUBLIC_URL=http://localhost:3000
+      - SYNAPSE_URL=http://synapse:8008
+      - SYNAPSE_SERVER_NAME=localhost
+      - DB_PATH=/data/atrix.db
+    env_file:
+      - ./server/.env
+    depends_on:
+      synapse:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  synapse-data:
+  atrix-data:

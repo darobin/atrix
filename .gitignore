@@ -137,3 +137,14 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# DuckDB files
+*.db
+*.db-wal
+*.db-shm
+
+# Sensitive env files (keep .env.example)
+server/.env
+
+ngrok.token
+synapse-data/

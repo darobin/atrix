@@ -1,0 +1,16 @@
+id: atrix
+url: "http://host.docker.internal:3000"
+
+as_token: "CHANGE_ME_AS_TOKEN"
+hs_token: "CHANGE_ME_HS_TOKEN"
+
+sender_localpart: atrix
+
+namespaces:
+  users:
+    - exclusive: true
+      regex: '@atproto_.*'
+  rooms: []
+  aliases: []
+
+rate_limited: false

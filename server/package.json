@@ -1,0 +1,27 @@
+{
+  "name": "atrix-server",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "dependencies": {
+    "@atproto/api": "^0.13.24",
+    "@atproto/oauth-client-node": "^0.2.10",
+    "@duckdb/node-api": "^1.4.4-r.3",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-session": "^1.18.0",
+    "matrix-js-sdk": "^34.8.0",
+    "node-fetch": "^3.3.2",
+    "uuid": "^10.0.0"
+  },
+  "devDependencies": {
+    "@ngrok/ngrok": "^1.7.0",
+    "http-proxy-middleware": "^3.0.5"
+  }
+}

@@ -1,0 +1,39 @@
+server_name: "localhost"
+pid_file: /data/homeserver.pid
+
+listeners:
+  - port: 8008
+    tls: false
+    type: http
+    x_forwarded: true
+    resources:
+      - names: [client, federation]
+        compress: false
+
+database:
+  name: sqlite3
+  args:
+    database: /data/homeserver.db
+
+log_config: "/config/log.yaml"
+media_store_path: /data/media_store
+signing_key_path: /data/localhost.signing.key
+
+# Allow users created by the AS
+enable_registration: true
+enable_registration_without_verification: true
+
+# Admin operations
+registration_shared_secret: "CHANGE_ME_REGISTRATION_SHARED_SECRET"
+
+# Application services
+app_service_config_files:
+  - /config/atrix-registration.yaml
+
+# Disable federation for local dev
+federation_domain_whitelist: []
+
+# Suppress noisy federation errors
+suppress_key_server_warning: true
+
+report_stats: false
